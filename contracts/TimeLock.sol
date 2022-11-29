@@ -3,7 +3,24 @@ pragma solidity ^0.8.0;
 
 //importing Reentrancy modifier
 
-//dont forget to add reentrancy modifier to withdraw
+
+/*things to do 
+1) Add events 
+2) Add option to add signatures
+3) Add an option to remove signatures
+4) Role and isVerified both are duplicates fix  it 
+5) Add function to view minimum signature
+6) Add a functon to check  if an address is a verified party
+*/
+
+
+/*
+
+Design thought: should I use HasRole(Openzeppelin) or internal mapping to check if an address is  allowed to call/ 
+The HasRole also has default admin role so that could  be updated to query the original msg.sender?  or maybe not?
+Can't figure out the vulnerabilities
+
+*/
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -20,13 +37,10 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         uint256 Value;
         uint256 MinimumSignatures;
         uint256 Nonce;
-        bytes32 Role;
         mapping(address => bool) isVerified;
 
     }
     mapping(uint256 => TimeCheck) private DepositForEachId;
-    mapping(address => uint256[]) public AddressIds;
-    bytes32 constant public TrustedCaller = keccak256("TrustedCaller");
     uint256 Id = 1;
     
 
@@ -36,9 +50,6 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         DepositForEachId[Id].DepositAddress = msg.sender;
         DepositForEachId[Id].LockedUntil = block.timestamp + _SecondsToDeposit;
         DepositForEachId[Id].Value = msg.value;
-        AddressIds[msg.sender].push(Id);
-        DepositForEachId[Id].Role = keccak256(abi.encodePacked(Id));
-        
         Id++;
 
     }
@@ -50,12 +61,11 @@ contract TimeLock is ReentrancyGuard,AccessControl{
 
     function SetupRecovery(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) external {
         require(_address.length != 0,"Address array is 0");
-        //Not required to check if the id is valid because DepositAddress of id which is invalid will be 0 address
-        require(DepositForEachId[_id].DepositAddress == msg.sender,"Invalid Id called");
+        //Not required to check if the id is valid because DepositAddress of invalid id will be 0 address
+        require(DepositForEachId[_id].DepositAddress == msg.sender,"You do not have permission");
         for(uint256 i = 0; i<= _address.length ; i++){
             require(_address[i] != address(0),"0 address detected");
             DepositForEachId[Id].isVerified[_address[i]] = true;
-            grantRole(DepositForEachId[_id].Role,_address[i]);
 
         }
 
@@ -65,7 +75,7 @@ contract TimeLock is ReentrancyGuard,AccessControl{
 
     function RecoveryCall(uint256 _id,bytes[] memory signatures,address payable _ToAddress) external{
         require(DepositForEachId[_id].DepositAddress != address(0) ,"Invalid id being called");
-        require(hasRole(DepositForEachId[_id].Role,msg.sender),"You do not have permission for this id");
+        require(DepositForEachId[_id].isVerified[msg.sender],"You do not have permission for this id");
 
         //what if the same signature is passed twice then MinimumSignatures require will pass update it
 
@@ -96,10 +106,6 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         bytes32 ethSignedMessage = CreateMessageToSign(_id,_Nonce,_to);
         address _Received = ethSignedMessage.recover(_Signatures);
         return(_Received);
-    }
-
-    function CheckId(address _address) public view returns(uint256[] memory ){
-        return(AddressIds[_address]);
     }
 
     function TimeLeft(uint256 _id) public view returns(uint256){
