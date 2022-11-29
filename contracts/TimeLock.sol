@@ -1,24 +1,40 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-//importing Reentrancy modifier
+/* TimeLock Contract which doest the following things
+ 
+       1) Allows users to deposit and specify a time to lock their "ETHER"
+       2) Only allow users to withdraw after a specified withdrawal time period has finished
+       3) Provides a "recovery mechanism" to allow users to withdraw if they loose access to their wallet 
+              (will check whether the specified time period has passed)
+
+
+
+*/
 
 
 /*things to do 
 1) Add events 
 2) Add option to add signatures
 3) Add an option to remove signatures
-4) Role and isVerified both are duplicates fix  it 
-5) Add function to view minimum signature
+4) Role and isVerified both are duplicates fix  it :- Fixed
+5) Add function to view minimum signatures : Done
 6) Add a functon to check  if an address is a verified party
+7) Add fallback() function :- Done but check for vulnerabilities
+8) What if a token was accidently transferred to this address?
+9) Add a function to call arbitrary internal function for the deployer of te contract?
+
 */
 
 
 /*
+Design thoughts:
 
-Design thought: should I use HasRole(Openzeppelin) or internal mapping to check if an address is  allowed to call/ 
+1: should I use HasRole(Openzeppelin) or internal mapping to check if an address is  allowed to call/ 
 The HasRole also has default admin role so that could  be updated to query the original msg.sender?  or maybe not?
 Can't figure out the vulnerabilities
+
+2: SHould i uses mapping to combine DepositAddress and Value
 
 */
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
@@ -30,18 +46,30 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     using Address for address payable;
     using ECDSA for bytes32;
 
+
+    modifier CheckIsOwner(uint256 _id) {
+        require(DepositForEachId[_id].DepositAddress == msg.sender,"Permission Denied");
+        _;
+        
+    }
+
     
     struct TimeCheck{
+        //default value of address = addres(0)
         address DepositAddress;
+        //default value of Uint256 = 0
         uint256 LockedUntil;
         uint256 Value;
         uint256 MinimumSignatures;
-        uint256 Nonce;
+        uint256 Nonce;  
+        //default value of this mapping is address(0) and bool is 0
         mapping(address => bool) isVerified;
 
     }
     mapping(uint256 => TimeCheck) private DepositForEachId;
     uint256 Id = 1;
+
+    
     
 
 
@@ -54,15 +82,17 @@ contract TimeLock is ReentrancyGuard,AccessControl{
 
     }
 
-    function withdraw(uint256 _id) external nonReentrant{
-        require(DepositForEachId[_id].DepositAddress == msg.sender,"permission denied");
+    //The main withdrawal function which is supposed to workonly if the owner of Id is called
+
+    function withdraw(uint256 _id) external CheckIsOwner(_id) nonReentrant{
         _withdraw(_id,payable(msg.sender));
     }
 
-    function SetupRecovery(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) external {
+    //This functions allows the owner of the id to setup address which can later be used to recover the minimum if the original owner looses his address
+
+    function AddSigners(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) external CheckIsOwner(_id){
         require(_address.length != 0,"Address array is 0");
         //Not required to check if the id is valid because DepositAddress of invalid id will be 0 address
-        require(DepositForEachId[_id].DepositAddress == msg.sender,"You do not have permission");
         for(uint256 i = 0; i<= _address.length ; i++){
             require(_address[i] != address(0),"0 address detected");
             DepositForEachId[Id].isVerified[_address[i]] = true;
@@ -73,21 +103,35 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     }
 
 
+    function RemoveSigners(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) public CheckIsOwner(_id){
+        for(uint256 i = 0; i<= _address.length ; i++){
+            DepositForEachId[Id].isVerified[_address[i]] = false;
+
+        }
+        DepositForEachId[_id].MinimumSignatures = _MinimumSignatures;
+
+        
+    }
+
+    //This is the withdrawal call which "I believe" checks if the signers are valid address for that id , 
+    //makng sure it doesnt work if we copy paste previous calldata
+
+
     function RecoveryCall(uint256 _id,bytes[] memory signatures,address payable _ToAddress) external{
         require(DepositForEachId[_id].DepositAddress != address(0) ,"Invalid id being called");
         require(DepositForEachId[_id].isVerified[msg.sender],"You do not have permission for this id");
 
-        //what if the same signature is passed twice then MinimumSignatures require will pass update it
+
 
         require(_ToAddress != address(0) && signatures.length >= DepositForEachId[_id].MinimumSignatures,"Sending to wrong address");  
 
         for(uint256 i = 0; i<=signatures.length ; i++){
             address ReceivedAddress = VerifySignature(_id, DepositForEachId[_id].Nonce,_ToAddress,signatures[i]);
-            require(DepositForEachId[_id].isVerified[ReceivedAddress] && ReceivedAddress != address(0),"Invalid address in signature");
+            //Not required to check if the ReceivedAddress is 0 because .isVerified[0] = false?
+            require(DepositForEachId[_id].isVerified[ReceivedAddress] ,"Invalid address in signature");
         }
-
-        _withdraw(_id, _ToAddress);
         DepositForEachId[_id].Nonce++;
+        _withdraw(_id, _ToAddress);
 
 
 
@@ -95,11 +139,21 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     }
 
 
+    //this is the main _withdraw function should be only be accessed with eitheir 
+    // 1) Withdraw() or RecoveryCall()
     function _withdraw(uint256 _id,address payable _AddressToSend) private {
         require(DepositForEachId[_id].LockedUntil <= block.timestamp,"Enough time has not passed");
         DepositForEachId[_id].Value = 0;
         _AddressToSend.sendValue(DepositForEachId[_id].Value);
 
+    }
+
+
+    //function to UpdateSignature 
+    //should be called by the owner of that particular id
+    function UpdateSignatures(uint256 _id,uint256 _MinimumSignatures) external CheckIsOwner(_id){
+        require(_MinimumSignatures >=1,"Minimum 1 signatures should  be mentioned");
+        DepositForEachId[_id].MinimumSignatures = _MinimumSignatures;
     }
 
     function VerifySignature(uint256 _id,uint256 _Nonce,address _to,bytes memory _Signatures) view internal returns(address){
@@ -122,5 +176,24 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         return Hash.toEthSignedMessageHash();
     }
 
+    function ViewMinimumSignatures(uint256 _id) public view returns(uint256){
+        return(DepositForEachId[_id].MinimumSignatures);
+    }
 
+
+    function CheckIsVerified(uint256 _id,address _address) public view returns(bool){
+        return(DepositForEachId[_id].isVerified[_address]);
+    }
+
+
+    //Any vulnerabilities possible here? maybe by sending  not enough gas?
+    fallback() external payable{
+        //msg.sender will be address(this)?
+        deposit(10);
+    }
+
+    //Any vulnerabilities possible here? maybe by sending  not enough gas?
+    receive() external payable{
+        deposit(10);
+    }
 }
