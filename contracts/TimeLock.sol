@@ -43,12 +43,12 @@ contract TimeLock is ReentrancyGuard,AccessControl{
 
     }
 
-    function withdraw(uint256 _id) public nonReentrant{
+    function withdraw(uint256 _id) external nonReentrant{
         require(DepositForEachId[_id].DepositAddress == msg.sender,"permission denied");
         _withdraw(_id,payable(msg.sender));
     }
 
-    function SetupRecovery(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) public{
+    function SetupRecovery(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) external {
         require(_address.length != 0,"Address array is 0");
         //Not required to check if the id is valid because DepositAddress of id which is invalid will be 0 address
         require(DepositForEachId[_id].DepositAddress == msg.sender,"Invalid Id called");
@@ -62,12 +62,14 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         DepositForEachId[_id].MinimumSignatures = _MinimumSignatures;       
     }
 
-    //prevent copy pasting of signatures by including a uniqure transaction count modifier
 
-    function RecoveryCall(uint256 _id,bytes[] memory signatures,address payable _ToAddress) public{
-        require(DepositForEachId[_id].DepositAddress != address(0) && signatures.length >= DepositForEachId[_id].MinimumSignatures,"Invalid id being called");
+    function RecoveryCall(uint256 _id,bytes[] memory signatures,address payable _ToAddress) external{
+        require(DepositForEachId[_id].DepositAddress != address(0) ,"Invalid id being called");
         require(hasRole(DepositForEachId[_id].Role,msg.sender),"You do not have permission for this id");
-        require(_ToAddress != address(0),"Sending to wrong address");  
+
+        //what if the same signature is passed twice then MinimumSignatures require will pass update it
+
+        require(_ToAddress != address(0) && signatures.length >= DepositForEachId[_id].MinimumSignatures,"Sending to wrong address");  
 
         for(uint256 i = 0; i<=signatures.length ; i++){
             address ReceivedAddress = VerifySignature(_id, DepositForEachId[_id].Nonce,_ToAddress,signatures[i]);
@@ -83,7 +85,7 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     }
 
 
-    function _withdraw(uint256 _id,address payable _AddressToSend) private nonReentrant{
+    function _withdraw(uint256 _id,address payable _AddressToSend) private {
         require(DepositForEachId[_id].LockedUntil <= block.timestamp,"Enough time has not passed");
         DepositForEachId[_id].Value = 0;
         _AddressToSend.sendValue(DepositForEachId[_id].Value);
