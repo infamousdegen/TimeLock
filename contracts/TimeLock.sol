@@ -15,14 +15,14 @@ pragma solidity ^0.8.0;
 
 /*things to do 
 1) Add events 
-2) Add option to add signatures
-3) Add an option to remove signatures
+2) Add option to add signatures :- Done
+3) Add an option to remove signatures :- Done
 4) Role and isVerified both are duplicates fix  it :- Fixed
 5) Add function to view minimum signatures : Done
-6) Add a functon to check  if an address is a verified party
+6) Add a functon to check  if an address is a verified party :Done
 7) Add fallback() function :- Done but check for vulnerabilities
 8) What if a token was accidently transferred to this address?
-9) Add a function to call arbitrary internal function for the deployer of te contract?
+9) Add a function to call arbitrary internal function for the deployer of te contract? :pending
 
 */
 
