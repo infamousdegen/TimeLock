@@ -23,6 +23,7 @@ pragma solidity ^0.8.0;
 7) Add fallback() function :- Done but check for vulnerabilities
 8) What if a token was accidently transferred to this address?
 9) Add a function to call arbitrary internal function for the deployer of te contract? :pending
+10) Provide an option for users to deposit their funds in a yield earning farms
 
 */
 
@@ -41,6 +42,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import "hardhat/console.sol";
 
 contract TimeLock is ReentrancyGuard,AccessControl{
     using Address for address payable;
@@ -66,8 +68,9 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         mapping(address => bool) isVerified;
 
     }
+    //changed deposit for eachId into public
     mapping(uint256 => TimeCheck) private DepositForEachId;
-    uint256 Id = 1;
+    uint256 public Id = 1;
 
     
     
@@ -185,15 +188,21 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         return(DepositForEachId[_id].isVerified[_address]);
     }
 
+    function CheckDeposit(uint256 _id) external view returns(address){
+        return(DepositForEachId[_id].DepositAddress);
+    }
+
 
     //Any vulnerabilities possible here? maybe by sending  not enough gas?
     fallback() external payable{
+        console.log("here");
         //msg.sender will be address(this)?
         deposit(10);
     }
 
     //Any vulnerabilities possible here? maybe by sending  not enough gas?
     receive() external payable{
+        console.log("Here");
         deposit(10);
     }
 }

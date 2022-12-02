@@ -2,15 +2,15 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/home/deeps/TimeLock/contracts/TimeLock.sol": {
-      "lastModificationDate": 1669742530927,
-      "contentHash": "c847eb58417b68d82c0de7b7b03be12c",
+      "lastModificationDate": 1669951077919,
+      "contentHash": "1ca0a2e0a750eeca2cc914290d2c849f",
       "sourceName": "contracts/TimeLock.sol",
       "solcConfig": {
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -32,7 +32,8 @@
         "@openzeppelin/contracts/security/ReentrancyGuard.sol",
         "@openzeppelin/contracts/utils/Address.sol",
         "@openzeppelin/contracts/access/AccessControl.sol",
-        "@openzeppelin/contracts/utils/cryptography/ECDSA.sol"
+        "@openzeppelin/contracts/utils/cryptography/ECDSA.sol",
+        "hardhat/console.sol"
       ],
       "versionPragmas": [
         "^0.8.0"
@@ -49,8 +50,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -84,8 +85,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -119,8 +120,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -159,8 +160,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -196,8 +197,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -231,8 +232,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -266,8 +267,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -303,8 +304,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -340,8 +341,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -375,8 +376,8 @@
         "version": "0.8.17",
         "settings": {
           "optimizer": {
-            "enabled": false,
-            "runs": 200
+            "enabled": true,
+            "runs": 1000
           },
           "outputSelection": {
             "*": {
@@ -400,6 +401,78 @@
       ],
       "artifacts": [
         "IERC165"
+      ]
+    },
+    "/home/deeps/TimeLock/contracts/MockSelfDestruct.sol": {
+      "lastModificationDate": 1669951001505,
+      "contentHash": "1f53f7b4d1b83a35e3c852e745eb2c49",
+      "sourceName": "contracts/MockSelfDestruct.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol"
+      ],
+      "versionPragmas": [
+        "^0.8.0"
+      ],
+      "artifacts": [
+        "MockSelfDestruct"
+      ]
+    },
+    "/home/deeps/TimeLock/node_modules/hardhat/console.sol": {
+      "lastModificationDate": 1669725480665,
+      "contentHash": "4ff3cd2f6272c9a6516e9ee4f2b967d3",
+      "sourceName": "hardhat/console.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 1000
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">= 0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
       ]
     }
   }
