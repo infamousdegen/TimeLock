@@ -18,20 +18,20 @@ describe("TokenDeployment", async function () {
     this.owner = owner
   });
 
-  // it("Deposit Function", async function() {
-  //   const TokenId = await this.TimeLockContract.Id();
-  //   this.TimeLockContract.deposit(10,{value: ethers.utils.parseEther("1.0")});
-  //   expect(await this.TimeLockContract.CheckDeposit(TokenId.toNumber())).to.be.eq(this.owner.address);
-  //   expect(await this.TimeLockContract.CheckAmountDeposited(TokenId.toNumber())).to.be.eq(ethers.utils.parseEther("1.0"))
+  it("Deposit Function", async function() {
+    const TokenId = await this.TimeLockContract.Id();
+    this.TimeLockContract.deposit(10,{value: ethers.utils.parseEther("1.0")});
+    expect(await this.TimeLockContract.CheckDeposit(TokenId.toNumber())).to.be.eq(this.owner.address);
+    expect(await this.TimeLockContract.CheckAmountDeposited(TokenId.toNumber())).to.be.eq(ethers.utils.parseEther("1.0"))
 
-  // });
+  });
 
 
   it("DepositFunctionSelfDestruct",async function() {
     const TokenId = await this.TimeLockContract.Id();
     await this.SelfDestructContract.deposit({value :ethers.utils.parseEther("1.0")});
     await this.SelfDestructContract.selfdestructs(this.TimeLockContract.address);
-    console.log(TokenId);  
+    console.log(await ethers.provider.getBalance(this.TimeLockContract.address));  
     //expect(await this.TimeLockContract.CheckDeposit(TokenId.toNumber())).to.be.eq(this.SelfDestructContract.address);
     expect(await this.TimeLockContract.CheckAmountDeposited(TokenId.toNumber())).to.be.eq(ethers.utils.parseEther("1.0"))
   })

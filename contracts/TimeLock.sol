@@ -194,15 +194,16 @@ contract TimeLock is ReentrancyGuard,AccessControl{
 
 
     //Any vulnerabilities possible here? maybe by sending  not enough gas?
+    //These fallback wont be called  if eth is sent using selfdestruct
     fallback() external payable{
         console.log("here");
         //msg.sender will be address(this)?
-        deposit(10);
+        //deposit(10);
     }
 
     //Any vulnerabilities possible here? maybe by sending  not enough gas?
     receive() external payable{
         console.log("Here");
-        deposit(10);
+        //deposit(10);
     }
 }

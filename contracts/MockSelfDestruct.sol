@@ -7,6 +7,7 @@ contract MockSelfDestruct{
     function deposit() payable public{}
 
     function selfdestructs(address payable _to) payable public{
+        console.log("Inside Selfdestruct");
         selfdestruct(_to);
     }
 }
