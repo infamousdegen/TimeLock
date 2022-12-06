@@ -68,10 +68,9 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         mapping(address => bool) isVerified;
 
     }
-    //changed deposit for eachId into public
-    mapping(uint256 => TimeCheck) private DepositForEachId;
+    //changed deposit for eachId into private
+    mapping(uint256 => TimeCheck) public DepositForEachId;
     uint256 public Id = 1;
-
     
     
 
@@ -81,7 +80,10 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         DepositForEachId[Id].DepositAddress = msg.sender;
         DepositForEachId[Id].LockedUntil = block.timestamp + _SecondsToDeposit;
         DepositForEachId[Id].Value = msg.value;
+        unchecked{
+        //Well dont think I will ever hit 2^256 -1 value for Id
         Id++;
+        }
 
     }
 
@@ -96,9 +98,9 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     function AddSigners(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) external CheckIsOwner(_id){
         require(_address.length != 0,"Address array is 0");
         //Not required to check if the id is valid because DepositAddress of invalid id will be 0 address
-        for(uint256 i = 0; i<= _address.length ; i++){
+        for(uint256 i = 0; i< _address.length ; i++){
             require(_address[i] != address(0),"0 address detected");
-            DepositForEachId[Id].isVerified[_address[i]] = true;
+            DepositForEachId[_id].isVerified[_address[i]] = true;
 
         }
 
@@ -106,10 +108,9 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     }
 
 
-    function RemoveSigners(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) public CheckIsOwner(_id){
-        for(uint256 i = 0; i<= _address.length ; i++){
-            DepositForEachId[Id].isVerified[_address[i]] = false;
-
+    function RemoveSigners(uint256 _id,address[] calldata _address,uint256 _MinimumSignatures) external CheckIsOwner(_id){
+        for(uint256 i = 0; i< _address.length ; i++){
+            DepositForEachId[_id].isVerified[_address[i]] = false;
         }
         DepositForEachId[_id].MinimumSignatures = _MinimumSignatures;
 
