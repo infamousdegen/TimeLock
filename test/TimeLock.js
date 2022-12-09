@@ -69,15 +69,15 @@ describe("TokenDeployment", async function () {
     }
   })
 
-  it("Legit Withdrawl",async function(){
-    let InTokenId = this.AddresssToId[this.owner.address];
-    await time.increase(3600);
-    await network.provider.send("hardhat_setBalance", [
-      this.owner.address,
-      "0x1BC16D674EC80000",//setting balance 
-    ]);
-    await this.TimeLockContract.withdraw(InTokenId);
-  })
+  // it("Legit Withdrawl",async function(){
+  //   let InTokenId = this.AddresssToId[this.owner.address];
+  //   await time.increase(3600);
+  //   await network.provider.send("hardhat_setBalance", [
+  //     this.owner.address,
+  //     "0x1BC16D674EC80000",//setting balance 
+  //   ]);
+  //   await this.TimeLockContract.withdraw(InTokenId);
+  // })
 
 
   it("AddSigners",async function() {
@@ -133,6 +133,40 @@ describe("TokenDeployment", async function () {
     }
 
   })
+
+
+  it("AddSignersForRecoveryCall",async function() {
+
+    let InTokenId = this.AddresssToId[this.owner.address];
+    let address = [this.signer1.address,this.signer2.address,this.owner.address]
+    await this.TimeLockContract.AddSigners(InTokenId,address,3);
+    for(let i =0; i<3 ; i++){
+      expect(await this.TimeLockContract.CheckIsVerified(InTokenId,address[i])).to.be.true
+    }
+
+  })
+
+  it("RecoverCall",async function(){
+    await time.increase(3600);
+    let InTokenId = this.AddresssToId[this.owner.address];
+    let  Address = [this.signer1,this.signer2,this.owner]
+    let SignedDatatypeArray = [];
+    let Nonce = ((await this.TimeLockContract.DepositForEachId(InTokenId))["Nonce"]).toNumber()
+    let MessageToSign =  ethers.utils.arrayify(await this.TimeLockContract.CreateMessageToSign(InTokenId,Nonce,this.addr1.address));
+
+    for(let i=0 ; i<3 ; i++){
+      signer = Address[i]
+      let SignedMessage = await signer.signMessage(MessageToSign);
+      SignedDatatypeArray.push(SignedMessage)
+
+    }
+    console.log(await this.TimeLockContract.CheckAmountDeposited(InTokenId))
+    await this.TimeLockContract.connect(this.signer1).RecoveryCall(InTokenId,SignedDatatypeArray,this.addr1.address);
+    console.log(await this.addr1.getBalance())
+
+
+  })
+
 
 
 })

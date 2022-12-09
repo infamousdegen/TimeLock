@@ -24,7 +24,8 @@ pragma solidity ^0.8.0;
 8) What if a token was accidently transferred to this address?
 9) Add a function to call arbitrary internal function for the deployer of te contract? :pending
 10) Provide an option for users to deposit their funds in a yield earning farms
-
+11) Optimise Signature Verifiation
+12) Users will have to setup Recovery For Each Deposit better way to do it?
 */
 
 
@@ -42,7 +43,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
-import "hardhat/console.sol";
+
 
 contract TimeLock is ReentrancyGuard,AccessControl{
     using Address for address payable;
@@ -132,9 +133,11 @@ contract TimeLock is ReentrancyGuard,AccessControl{
         for(uint256 i = 0; i<signatures.length ; i++){
             address ReceivedAddress = VerifySignature(_id, DepositForEachId[_id].Nonce,_ToAddress,signatures[i]);
             //Not required to check if the ReceivedAddress is 0 because .isVerified[0] = false?
+
             require(DepositForEachId[_id].isVerified[ReceivedAddress] ,"Invalid address in signature");
         }
         DepositForEachId[_id].Nonce++;
+
         _withdraw(_id, _ToAddress);
 
 
@@ -145,10 +148,13 @@ contract TimeLock is ReentrancyGuard,AccessControl{
 
     //this is the main _withdraw function should be only be accessed with eitheir 
     // 1) Withdraw() or RecoveryCall()
-    function _withdraw(uint256 _id,address payable _AddressToSend) private {
+    function _withdraw(uint256 _id,address payable _AddressToSend) private nonReentrant{
         require(DepositForEachId[_id].LockedUntil <= block.timestamp,"Enough time has not passed");
+        uint256 amount = DepositForEachId[_id].Value;
+        require(address(this).balance >= amount, "Address: insufficient balance");
         DepositForEachId[_id].Value = 0;
-        _AddressToSend.sendValue(DepositForEachId[_id].Value);
+        (bool success, ) = _AddressToSend.call{value: amount}("");
+        require(success, "Address: unable to send value, recipient may have reverted");
 
     }
 
@@ -161,7 +167,8 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     }
 
     function VerifySignature(uint256 _id,uint256 _Nonce,address _to,bytes memory _Signatures) view internal returns(address){
-        bytes32 ethSignedMessage = CreateMessageToSign(_id,_Nonce,_to);
+        bytes32 MesageToSign = CreateMessageToSign(_id,_Nonce,_to);
+        bytes32 ethSignedMessage = MesageToSign.toEthSignedMessageHash();
         address _Received = ethSignedMessage.recover(_Signatures);
         return(_Received);
     }
@@ -177,7 +184,7 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     function CreateMessageToSign(uint256 _id,uint256 _Nonce,address _to) public view returns(bytes32){
         require(DepositForEachId[_id].DepositAddress != address(0),"Invalid Id called");
         bytes32 Hash = keccak256(abi.encodePacked(_id,_Nonce,_to));
-        return Hash.toEthSignedMessageHash();
+        return Hash;
     }
 
     function ViewMinimumSignatures(uint256 _id) public view returns(uint256){
@@ -194,17 +201,9 @@ contract TimeLock is ReentrancyGuard,AccessControl{
     }
 
 
-    //Any vulnerabilities possible here? maybe by sending  not enough gas?
-    //These fallback wont be called  if eth is sent using selfdestruct
-    fallback() external payable{
-        console.log("here");
-        //msg.sender will be address(this)?
-        //deposit(10);
-    }
 
-    //Any vulnerabilities possible here? maybe by sending  not enough gas?
-    receive() external payable{
-        console.log("Here");
-        //deposit(10);
-    }
+    //These fallback wont be called  if eth is sent using selfdestruct
+    fallback() external payable{}
+
+    receive() external payable{}
 }
